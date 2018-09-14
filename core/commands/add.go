@@ -390,7 +390,7 @@ You can now check what blocks have been created by:
 				log.Warning("cannot determine size of input file")
 			}
 
-			err := HandleCidBase(req)
+			_, err := HandleCidBase(nil, req)
 			if err != nil {
 				re.SetError(err, cmdkit.ErrNormal)
 				return re

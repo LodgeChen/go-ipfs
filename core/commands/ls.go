@@ -172,7 +172,7 @@ The JSON output contains type information.
 	},
 	Marshalers: cmds.MarshalerMap{
 		cmds.Text: func(res cmds.Response) (io.Reader, error) {
-			err := HandleCidBaseLegacy(res.Request())
+			_, err := HandleCidBaseLegacy(nil, res.Request())
 			if err != nil {
 				return nil, err
 			}

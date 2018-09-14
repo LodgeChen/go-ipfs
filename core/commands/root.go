@@ -7,7 +7,7 @@ import (
 
 	oldcmds "github.com/ipfs/go-ipfs/commands"
 	lgc "github.com/ipfs/go-ipfs/commands/legacy"
-	core "github.com/ipfs/go-ipfs/core"
+	cidenc "github.com/ipfs/go-ipfs/core/cidenc"
 	dag "github.com/ipfs/go-ipfs/core/commands/dag"
 	e "github.com/ipfs/go-ipfs/core/commands/e"
 	name "github.com/ipfs/go-ipfs/core/commands/name"
@@ -229,34 +229,49 @@ func MessageTextMarshaler(res oldcmds.Response) (io.Reader, error) {
 	return strings.NewReader(out.Message), nil
 }
 
-func handleCidBase(base string, upgrade bool, upgradeDefined bool) error {
-	enc := core.DefaultCidEncoder
+func handleCidBase(enc *cidenc.Encoder, base string, upgrade bool, upgradeDefined bool) (bool, error) {
+	if enc == nil {
+		enc = &cidenc.Default
+	}
+	e := *enc
 
 	if base != "" {
 		var err error
-		enc.Base, err = mbase.EncoderByName(base)
+		e.Base, err = mbase.EncoderByName(base)
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 
-	enc.Upgrade = upgrade
+	e.Upgrade = upgrade
 	if base != "" && !upgradeDefined {
-		enc.Upgrade = true
+		e.Upgrade = true
 	}
 
-	core.DefaultCidEncoder = enc
-	return nil
+	*enc = e
+	return base != "" || upgradeDefined, nil
 }
 
-func HandleCidBase(req *cmds.Request) error {
+func HandleCidBase(enc *cidenc.Encoder, req *cmds.Request) (bool, error) {
 	base, _ := req.Options[CidBaseOption].(string)
 	upgrade, defined := req.Options[UpgradeCidV0Option].(bool)
-	return handleCidBase(base, upgrade, defined)
+	return handleCidBase(enc, base, upgrade, defined)
 }
 
-func HandleCidBaseLegacy(req oldcmds.Request) error {
+func HandleCidBaseLegacy(enc *cidenc.Encoder, req oldcmds.Request) (bool, error) {
 	base, _, _ := req.Option(CidBaseOption).String()
 	upgrade, defined, _ := req.Option(UpgradeCidV0Option).Bool()
-	return handleCidBase(base, upgrade, defined)
+	return handleCidBase(enc, base, upgrade, defined)
+}
+
+func HandleCidBaseWithOverrideLegacy(req oldcmds.Request) (cidenc.Interface, error) {
+	defined, err := HandleCidBaseLegacy(nil, req)
+	if err != nil {
+		return nil, err
+	}
+	var enc cidenc.Interface = cidenc.Default
+	if !defined {
+		enc = cidenc.Default.WithOverride(req.Arguments()...)
+	}
+	return enc, nil
 }

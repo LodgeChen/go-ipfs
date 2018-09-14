@@ -130,7 +130,7 @@ var addPinCmd = &cmds.Command{
 	},
 	Marshalers: cmds.MarshalerMap{
 		cmds.Text: func(res cmds.Response) (io.Reader, error) {
-			err := HandleCidBaseLegacy(res.Request())
+			enc, err := HandleCidBaseWithOverrideLegacy(res.Request())
 			if err != nil {
 				return nil, err
 			}
@@ -167,7 +167,7 @@ var addPinCmd = &cmds.Command{
 
 			buf := new(bytes.Buffer)
 			for _, k := range added {
-				fmt.Fprintf(buf, "pinned %s %s\n", k, pintype)
+				fmt.Fprintf(buf, "pinned %s %s\n", k.Encode(enc), pintype)
 			}
 			return buf, nil
 		},
@@ -214,7 +214,7 @@ collected if needed. (By default, recursively. Use -r=false for direct pins.)
 	},
 	Marshalers: cmds.MarshalerMap{
 		cmds.Text: func(res cmds.Response) (io.Reader, error) {
-			err := HandleCidBaseLegacy(res.Request())
+			enc, err := HandleCidBaseWithOverrideLegacy(res.Request())
 			if err != nil {
 				return nil, err
 			}
@@ -230,7 +230,7 @@ collected if needed. (By default, recursively. Use -r=false for direct pins.)
 
 			buf := new(bytes.Buffer)
 			for _, k := range added.Pins {
-				fmt.Fprintf(buf, "unpinned %s\n", k)
+				fmt.Fprintf(buf, "unpinned %s\n", k.Encode(enc))
 			}
 			return buf, nil
 		},
@@ -326,7 +326,7 @@ Example:
 	Type: RefKeyList{},
 	Marshalers: cmds.MarshalerMap{
 		cmds.Text: func(res cmds.Response) (io.Reader, error) {
-			err := HandleCidBaseLegacy(res.Request())
+			_, err := HandleCidBaseLegacy(nil, res.Request())
 			if err != nil {
 				return nil, err
 			}
